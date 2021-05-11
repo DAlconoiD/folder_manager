@@ -1,5 +1,5 @@
 import datetime
-from . import DATE_FORMAT
+from . import app_config
 from .database import session, engine
 from .models import Folder, AttributeValue, Attribute, Base
 
@@ -17,19 +17,20 @@ def create_folder_from_cfg(cfg):
                     path=cfg.path,
                     date=cfg.date,
                     version=cfg.ver)
+    bind_values_to_folder(cfg, folder)
     session.add(folder)
-    if cfg.attributes != None:
-        for name, values in cfg.attributes.items():
-            attr = get_attribute(name)
-            if attr == None:
-                attr = create_attribute(name)
-            for v in values:
-                val = get_attribute_value(name, v)
-                if val == None:
-                    val = create_attribute_value(name, v)
-                folder.values.append(val)
     session.commit()
     return folder.id
+
+def update_folder(cfg):
+    folder = session.query(Folder).filter_by(id=cfg.id).first()
+    folder.values = []
+    bind_values_to_folder(cfg, folder)
+    folder.name = cfg.name
+    folder.path = cfg.path
+    folder.date = cfg.date
+    folder.version = cfg.ver
+    session.commit()
 
 
 def create_attribute(name):
@@ -49,6 +50,17 @@ def create_attribute_value(attr_name, val):
         return attr_val
     return None
 
+def bind_values_to_folder(cfg, folder):
+    if cfg.attributes != None:
+        for name, values in cfg.attributes.items():
+            attr = get_attribute(name)
+            if attr == None:
+                attr = create_attribute(name)
+            for v in values:
+                val = get_attribute_value(name, v)
+                if val == None:
+                    val = create_attribute_value(name, v)
+                folder.values.append(val)
 
 def get_attribute(name):
     attr = session.query(Attribute).filter_by(name=name).first()

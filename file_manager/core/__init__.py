@@ -1,16 +1,25 @@
+import configparser
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATE_FORMAT = '%Y-%m-%d'
+APP_CONFIG = 'appconf.ini'
 
-
-class AppCore():
+class AppConfig():
     def __init__(self):
         # parse config
-        self.DATE_FORMAT = '%Y-%m-%d'
+        config = configparser.ConfigParser()
+        config.read(APP_CONFIG, encoding='utf-8')
         self.ROOT_PATH = r'C:\Users\Егор\Desktop\Test'
-        self.CONFIG_NAME = '!conf.ini'
-        self.DB_URI = 'sqlite:///test1.db'
+        self.ROOT_PATH = config.get('Settings', 'root', fallback=os.getcwd())
+        self.DATE_FORMAT = config.get('Settings', 'date_format', fallback='%Y-%m-%d') 
+        self.CONFIG_NAME = config.get('Settings', 'date_format', fallback='!conf.ini')
+        db_name = config.get('Settings', 'database', fallback='db.db')
+        self.DB_URI = 'sqlite:///' + db_name
+        print(f'Config:\n{self}')
 
 
-app = AppCore()
+    def __repr__(self) -> str:
+        return f'{self.ROOT_PATH}\n{self.CONFIG_NAME}\n{self.DATE_FORMAT}\n{self.DB_URI}'
+
+app_config = AppConfig()
