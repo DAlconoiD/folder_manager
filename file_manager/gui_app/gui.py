@@ -7,7 +7,8 @@ import tkinter.messagebox as msgbox
 import tkinter.filedialog as filedialog
 from tkcalendar import DateEntry
 from file_manager.core import app_config
-from file_manager.core.api import make_db, write_new_config, publish_folder, update_config
+from file_manager.core.api import (make_db, write_new_config, publish_folder,
+                                   update_config, attribute_list)
 from file_manager.core.config_manager.fs_operations import has_config
 from file_manager.core.config_manager.models import Config
 from file_manager.core.config_manager.config_rw import parse_config, get_attributes_only
@@ -38,6 +39,7 @@ class GUIApp(tk.Tk):
         tk.Tk.__init__(self)
         self._frame = None
         self.switch_frame(MainFrame)
+        self.attr_vals = attribute_list()
         make_db()
 
     def switch_frame(self, frame_class):
@@ -204,7 +206,7 @@ class CopyFrame(tk.Frame):
         self.draw_parent_attrs()
         self.category = tk.StringVar(self)
         self.choose_cat = ttk.OptionMenu(self.attr_ct,
-                                         self.category, *attr_vals.keys())
+                                         self.category, *self.master.attr_vals)
         self.choose_cat.grid(row=1, column=0, pady=5, sticky='ew')
         self.entry_value = ttk.Entry(self.attr_ct)
         self.entry_value.grid(row=1, column=1, pady=5, sticky='ew')
@@ -223,9 +225,6 @@ class CopyFrame(tk.Frame):
         self.btn_copy = ttk.Button(self.buttons_ct, text='Copy',
                                    command=self.copy_folder)
         self.btn_copy.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
-        self.btn_create = ttk.Button(self.buttons_ct, text='Create',
-                                     command=self.create_folder_config)
-        self.btn_create.grid(row=0, column=2, padx=5, pady=5, sticky='ew')
 
     def on_frame_configure1(self, e):
         self.canvas1.configure(scrollregion=self.canvas1.bbox('all'))
@@ -286,13 +285,19 @@ class CopyFrame(tk.Frame):
                     'ERROR', f'"From:" folder must be outside root directory: {app_config.ROOT_PATH}')
                 return
             self.from_dirname = os.path.basename(os.path.normpath(path))
-            print('DIRNAME: ' + self.from_dirname)
             self.entry_name.delete(0, 'end')
             self.entry_name.insert('end', self.from_dirname)
             self.path_from = path
             self.btn_from.configure(text=self.path_from)
+            if self.rel_path_to != '':
+                self.lbl_path.configure(text=os.path.join(
+                    self.rel_path_to, self.from_dirname))
 
     def ask_dir_to(self):
+        if self.path_from == '':
+            msgbox.showerror(
+                'ERROR', 'Select "From" folder first')
+            return
         initial_dir = app_config.ROOT_PATH if self.path_to == '' else self.path_to
         path = filedialog.askdirectory(initialdir=initial_dir)
         if path:
@@ -301,8 +306,10 @@ class CopyFrame(tk.Frame):
                     'ERROR', f'"To:" folder must be inside root directory: {app_config.ROOT_PATH}')
                 return
             self.path_to = path
-            self.rel_path_to = os.path.relpath(self.path_to, app_config.ROOT_PATH)
-            self.lbl_path.configure(text=self.rel_path_to)
+            self.rel_path_to = os.path.relpath(
+                self.path_to, app_config.ROOT_PATH)
+            self.lbl_path.configure(text=os.path.join(
+                self.rel_path_to, self.from_dirname))
             self.btn_to.configure(text=self.path_to)
             self.parent_attrs = get_attributes_only(self.rel_path_to, {})
             self.draw_parent_attrs()
@@ -369,7 +376,8 @@ class CopyFrame(tk.Frame):
         if self.from_dirname:
             self.path_to = os.path.join(
                 self.path_to, self.from_dirname)
-            self.rel_path_to = os.path.relpath(self.path_to, app_config.ROOT_PATH)
+            self.rel_path_to = os.path.relpath(
+                self.path_to, app_config.ROOT_PATH)
         name = self.entry_name.get().strip()
         date = self.entry_date.get_date()
         ver = self.entry_ver.get().strip()
@@ -380,6 +388,7 @@ class CopyFrame(tk.Frame):
             return None
         cfg = Config(name, date, ver, path, attributes=attrs, special=spec)
         return cfg
+
 
 class EditFrame(tk.Frame):
     def __init__(self, master):
@@ -415,7 +424,7 @@ class EditFrame(tk.Frame):
             grid(row=0, column=0, padx=5, pady=5, sticky='w')
         # create buttons
         self.btn_folder = ttk.Button(self.path_ct, text='Choose Path',
-                                   command=self.ask_dir)
+                                     command=self.ask_dir)
         self.btn_folder.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
         # CREATE FOLDER INFO CONTAINER
@@ -483,7 +492,7 @@ class EditFrame(tk.Frame):
         self.draw_parent_attrs()
         self.category = tk.StringVar(self)
         self.choose_cat = ttk.OptionMenu(self.attr_ct,
-                                         self.category, *attr_vals.keys())
+                                         self.category, *self.master.attr_vals)
         self.choose_cat.grid(row=1, column=0, pady=5, sticky='ew')
         self.entry_value = ttk.Entry(self.attr_ct)
         self.entry_value.grid(row=1, column=1, pady=5, sticky='ew')
@@ -574,7 +583,8 @@ class EditFrame(tk.Frame):
             if self.config.ver:
                 self.entry_name.insert('end', self.config.name)
             else:
-                self.entry_name.insert('end', os.path.basename(os.path.normpath(path)))
+                self.entry_name.insert(
+                    'end', os.path.basename(os.path.normpath(path)))
             self.entry_ver.delete(0, 'end')
             if self.config.ver:
                 self.entry_ver.insert('end', self.config.ver)
@@ -633,14 +643,15 @@ class EditFrame(tk.Frame):
         else:
             update_config(self.config)
 
-
     def update_config(self):
         self.config.name = self.entry_name.get().strip()
         self.config.date = self.entry_date.get_date()
         self.config.ver = self.entry_ver.get().strip()
         self.config.path = self.rel_path
         self.config.attributes = self.folder_attrs
-        self.config.special = {'comment': self.comment_text.get('1.0', 'end-1c')}
+        self.config.special = {
+            'comment': self.comment_text.get('1.0', 'end-1c')}
+
 
 class SearchFrame(tk.Frame):
     def __init__(self, master=None):

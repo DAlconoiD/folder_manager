@@ -1,4 +1,5 @@
 import datetime
+from sqlalchemy import inspect
 from . import app_config
 from .database import session, engine
 from .models import Folder, AttributeValue, Attribute, Base
@@ -72,6 +73,9 @@ def get_attribute_values(name):
     attr_values = attr.values
     return attr_values
 
+def get_attr_list():
+    attrs = session.query(Attribute.name).all()
+    return set(a[0] for a in attrs)
 
 def get_attribute_value(name, value):
     val = session.query(AttributeValue).join(Attribute).\
@@ -89,3 +93,10 @@ def get_all_folder_ids():
     ids = session.query(Folder.id).all()
     id_list = list([id[0] for id in ids])
     return id_list
+
+def clear_db_data():
+    meta = Base.metadata
+    for table in reversed(meta.sorted_tables):
+        session.execute(table.delete())
+        print(f'Clear table {table}')
+    session.commit()
