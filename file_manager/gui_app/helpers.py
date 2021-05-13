@@ -7,7 +7,7 @@ def path_is_parent(parent_path, child_path):
     return os.path.commonpath([parent_path]) == os.path.commonpath([parent_path, child_path])
 
 
-def shorten_path(path, max_len):
+def shorten_path(path, max_len=45):
     """Shortens path if len(path) > max_len"""
     if len(path) <= max_len:
         return path

@@ -70,7 +70,7 @@ def get_attribute(name):
 
 def get_attribute_values(name):
     attr = session.query(Attribute).filter_by(name=name).first()
-    attr_values = attr.values
+    attr_values = set(a.value for a in attr.values)
     return attr_values
 
 def get_attr_list():

@@ -4,7 +4,7 @@ from .models import Folder, AttributeValue, Attribute, Base
 from .config_manager.fs_operations import scan_fs
 from .config_manager.config_rw import parse_config, write_config_to_file
 from .db_operations import (clear_db_data, create_folder_from_cfg, create_all, drop_all, create_attribute,
-                            folder_exists, get_all_folder_ids, update_folder, get_attr_list)
+                            folder_exists, get_all_folder_ids, get_attribute_values, update_folder, get_attr_list)
 from shutil import copytree
 
 
@@ -51,9 +51,13 @@ def write_attr():
     for attr in app_config.predefined_attrs:
         create_attribute(attr)
 
-def attribute_list():
+def attribute_values_list():
+    attr_vals = {}
     attrs = get_attr_list()
-    return attrs
+    for attr in attrs:
+        values = get_attribute_values(attr)
+        attr_vals[attr] = values
+    return attr_vals
 
 def write_new_config(cfg):
     cfg.id = create_folder_from_cfg(cfg)
