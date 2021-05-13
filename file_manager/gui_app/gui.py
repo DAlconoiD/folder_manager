@@ -652,7 +652,6 @@ class SearchFrame(tk.Frame):
         self.folder_attrs = {}
         self.attr_vals = self.master.attr_vals
         self.attr_names = sorted(self.attr_vals.keys())
-        print(self.attr_vals)
 
     def create_widgets(self):
         # configure grid
@@ -663,32 +662,32 @@ class SearchFrame(tk.Frame):
 
         # CREATE FOLDER INFO CONTAINER
         self.info_ct = tk.LabelFrame(self, text='Folder Information:')
-        self.info_ct.grid_columnconfigure(0, weight=100)
+        self.info_ct.grid_columnconfigure(0, weight=0)
+        self.info_ct.grid_columnconfigure(1, weight=100)
         self.info_ct.grid_rowconfigure(6, weight=100)
         self.info_ct.grid(row=0, column=0, rowspan=2,
                           padx=5, pady=5, sticky='nsew')
         # create labels
-        ttk.Label(self.info_ct, text='Name:').\
+        tk.Label(self.info_ct, text='Name:').\
             grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        ttk.Label(self.info_ct, text='Path:').\
+        tk.Label(self.info_ct, text='Path:').\
             grid(row=1, column=0, padx=5, pady=5, sticky='w')
-        ttk.Label(self.info_ct, text='Date:').\
+        tk.Label(self.info_ct, text='Date:').\
             grid(row=2, column=0, padx=5, pady=5, sticky='w')
-        ttk.Label(self.info_ct, text='Version:').\
+        tk.Label(self.info_ct, text='Version:').\
             grid(row=3, column=0, padx=5, pady=5, sticky='w')
-        ttk.Label(self.info_ct, text='Comment:').\
+        tk.Label(self.info_ct, text='Comment:').\
             grid(row=4, column=0, padx=5, pady=5, sticky='w')
-        ttk.Label(self.info_ct, text='Attributes:').\
+        tk.Label(self.info_ct, text='Attributes:').\
             grid(row=5, column=0, padx=5, pady=5, sticky='w')
-        # create entry fields and dynamic label for path
-        self.lbl_name = ttk.Label(self.info_ct)
-        self.lbl_name.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
-        self.lbl_path = ttk.Label(self.info_ct, text='PATH IS NOT SELECTED')
+        self.lbl_name = ttk.Label(self.info_ct, text='---')
+        self.lbl_name.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_path = ttk.Label(self.info_ct, text='---')
         self.lbl_path.grid(row=1, column=1, padx=5, pady=5, sticky='w')
-        self.lbl_date = ttk.Label(self.info_ct)
-        self.lbl_date.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
-        self.lbl_ver = ttk.Label(self.info_ct)
-        self.lbl_ver.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+        self.lbl_date = ttk.Label(self.info_ct, text='---')
+        self.lbl_date.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        self.lbl_ver = ttk.Label(self.info_ct, text='---')
+        self.lbl_ver.grid(row=3, column=1, padx=5, pady=5, sticky='w')
         self.comment_text = tk.Text(self.info_ct, height=4, state='disabled')
         self.comment_text.grid(row=4, column=1, padx=5, pady=5, sticky='ew')
         # create a scrollable frame for attributes
@@ -703,11 +702,11 @@ class SearchFrame(tk.Frame):
         self.canvas1.create_window((0, 0),
                                    window=self.scrollable_frame1, anchor='nw')
         self.scrollable_frame1.bind('<Configure>', self.on_frame_configure1)
-        self.btn_open = ttk.Button(self.info_ct, command=self.open_folder)
+        self.btn_open = ttk.Button(self.info_ct, text='Open', command=self.open_folder)
         self.btn_open.grid(row=7, column=0, padx=5, pady=5,)
 
         # CREATE ATTRIBUTE CHOOSE CONTAINER
-        self.attr_ct = tk.LabelFrame(self, text='Search Attributes:')
+        self.attr_ct = tk.LabelFrame(self, text='Search By Attributes:')
         self.attr_ct.grid(row=0, column=1, rowspan=2,
                           padx=5, pady=5, sticky='nsew')
         self.attr_ct.columnconfigure(0, weight=40)
@@ -721,15 +720,15 @@ class SearchFrame(tk.Frame):
         self.canvas2.configure(yscrollcommand=self.vsb2.set)
 
         self.canvas2.grid(row=1, column=0, columnspan=3, sticky='nswe')
-        self.vsb2.grid(row=0, column=3, sticky='ns')
+        self.vsb2.grid(row=1, column=3, sticky='ns')
         self.canvas2.create_window((0, 0),
                                    window=self.scrollable_frame2, anchor='nw')
         self.scrollable_frame2.bind('<Configure>', self.on_frame_configure2)
         self.choose_cat = ttk.Combobox(
             self.attr_ct, values=self.attr_names, state='readonly')
+        self.choose_cat.current(0)
         self.choose_cat.grid(row=0, column=0, pady=5, sticky='ew')
-        values = [] if len(self.attr_names) == 0 else sorted(
-            self.attr_vals[self.attr_names[0]])
+        self.choose_cat.bind('<<ComboboxSelected>>', self.clear_value)
         self.choose_value = ttk.Combobox(self.attr_ct, postcommand=self.change_values_list,
                                          state='readonly')
         self.choose_value.grid(row=0, column=1, pady=5, sticky='ew')
@@ -745,7 +744,7 @@ class SearchFrame(tk.Frame):
                                    command=lambda: self.master.switch_frame(MainFrame))
         self.btn_back.grid(row=0, column=0, padx=5, pady=5, sticky='ew')
         self.btn_search = ttk.Button(self.buttons_ct, text='Search',
-                                     command=self.copy_folder)
+                                     command=self.search_folders)
         self.btn_search.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
     def on_frame_configure1(self, e):
@@ -754,8 +753,12 @@ class SearchFrame(tk.Frame):
     def on_frame_configure2(self, e):
         self.canvas2.configure(scrollregion=self.canvas2.bbox('all'))
 
+    def clear_value(self, event):
+        self.choose_value.set('')
+    
+
     def change_values_list(self):
-        values = self.attr_vals.get(self.choose_cat.get())
+        values = list(sorted(self.attr_vals.get(self.choose_cat.get())))
         self.choose_value.configure(values=values)
 
     def draw_search_attrs(self):
@@ -792,71 +795,26 @@ class SearchFrame(tk.Frame):
                     row += 1
 
     def add_attr(self):
-        attr = self.category.get()
-        val = self.entry_value.get().strip()
+        attr = self.choose_cat.get()
+        val = self.choose_value.get()
         if val == '':
             return
-        if attr not in self.folder_attrs:
-            self.folder_attrs[attr] = set()
-        self.folder_attrs[attr].add(val)
-        if (attr, val) in self.parent_chkbtn_vars:
-            self.parent_chkbtn_vars[(attr, val)].set(1)
-        self.draw_folder_attrs()
+        if attr not in self.search_attrs:
+            self.search_attrs[attr] = set()
+        self.search_attrs[attr].add(val)
+        self.draw_search_attrs()
 
     def remove_attr(self, attr, val):
-        if (attr, val) in self.parent_chkbtn_vars:
-            self.parent_chkbtn_vars[(attr, val)].set(0)
-        self.folder_attrs[attr].discard(val)
-        if len(self.folder_attrs[attr]) == 0:
-            self.folder_attrs.pop(attr)
-        self.draw_folder_attrs()
-
-    def create_folder_config(self):
-        if self.path_from:
-            msgbox.showerror(
-                'ERROR', 'You hawe already selected "From" folder. You can only copy this folder now.')
-            return
-        if has_config(self.rel_path_to):
-            msgbox.showerror(
-                'ERROR', 'Can not create config file in this directory. It already has one.')
-            return
-        cfg = self.create_config()
-        if cfg == None:
-            msgbox.showerror(
-                'ERROR', 'Please fill in all fields.')
-            return
-        write_new_config(cfg)
+        self.search_attrs[attr].discard(val)
+        if len(self.search_attrs[attr]) == 0:
+            self.search_attrs.pop(attr)
+        self.draw_search_attrs()
 
     def open_folder(self):
         pass
 
-    def copy_folder(self):
-        cfg = self.create_config()
-        if cfg == None:
-            msgbox.showerror(
-                'ERROR', 'Please fill in all fields.')
-            return
-        try:
-            publish_folder(self.path_from, self.path_to, cfg)
-        except Exception as err:
-            msgbox.showerror('ERROR', err)
-
-    def create_config(self):
-        if self.from_dirname:
-            self.path_to = os.path.join(
-                self.path_to, self.from_dirname)
-            self.rel_path_to = os.path.relpath(
-                self.path_to, app_config.ROOT_PATH)
-        name = self.entry_name.get().strip()
-        date = self.entry_date.get_date()
-        ver = self.entry_ver.get().strip()
-        path = self.rel_path_to
-        attrs = self.folder_attrs
-        spec = {'comment': self.comment_text.get('1.0', 'end-1c')}
-        if name == '' or ver == '' or path == '':
-            return None
-        cfg = Config(name, date, ver, path, attributes=attrs, special=spec)
-        return cfg
+    def search_folders(self):
+        pass
 
 
 def run_app():
