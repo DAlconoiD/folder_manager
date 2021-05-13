@@ -8,7 +8,7 @@ import tkinter.filedialog as filedialog
 from tkcalendar import DateEntry
 from file_manager.core import app_config
 from file_manager.core.api import (make_db, write_new_config, publish_folder,
-                                   update_config, attribute_values_list)
+                                   update_config, attribute_values_list, search_folders)
 from file_manager.core.config_manager.fs_operations import has_config
 from file_manager.core.config_manager.models import Config
 from file_manager.core.config_manager.config_rw import parse_config, get_attributes_only
@@ -20,8 +20,8 @@ class GUIApp(tk.Tk):
         tk.Tk.__init__(self)
         self._frame = None
         self.switch_frame(MainFrame)
-        self.attr_vals = attribute_values_list()
         make_db()
+        self.attr_vals = attribute_values_list()
 
     def switch_frame(self, frame_class):
         """Destroys current frame and replaces it with a new one"""
@@ -60,19 +60,6 @@ class MainFrame(ttk.Frame):
                               command=lambda: sys.exit()).\
             grid(row=3, column=0, columnspan=2,
                  padx=15, pady=15, sticky='nswe')
-
-
-class SettingsFrame(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master.geometry('800x800')
-        self.master.resizable(False, False)
-        self.master.title('Copy')
-        self.pack(expand=True, fill='both')
-        self.create_widgets()
-
-    def create_widgets(self):
-        pass
 
 
 class CopyFrame(tk.Frame):
@@ -650,6 +637,7 @@ class SearchFrame(tk.Frame):
         self.config = None
         self.search_attrs = {}
         self.folder_attrs = {}
+        self.searched_folders = search_folders()
         self.attr_vals = self.master.attr_vals
         self.attr_names = sorted(self.attr_vals.keys())
 
@@ -657,16 +645,15 @@ class SearchFrame(tk.Frame):
         # configure grid
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
-        self.grid_rowconfigure(0, weight=0)
-        self.grid_rowconfigure(1, weight=100)
+        self.grid_rowconfigure(0, weight=70)
+        self.grid_rowconfigure(1, weight=30)
 
         # CREATE FOLDER INFO CONTAINER
         self.info_ct = tk.LabelFrame(self, text='Folder Information:')
         self.info_ct.grid_columnconfigure(0, weight=0)
         self.info_ct.grid_columnconfigure(1, weight=100)
         self.info_ct.grid_rowconfigure(6, weight=100)
-        self.info_ct.grid(row=0, column=0, rowspan=2,
-                          padx=5, pady=5, sticky='nsew')
+        self.info_ct.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
         # create labels
         tk.Label(self.info_ct, text='Name:').\
             grid(row=0, column=0, padx=5, pady=5, sticky='w')
@@ -702,13 +689,13 @@ class SearchFrame(tk.Frame):
         self.canvas1.create_window((0, 0),
                                    window=self.scrollable_frame1, anchor='nw')
         self.scrollable_frame1.bind('<Configure>', self.on_frame_configure1)
-        self.btn_open = ttk.Button(self.info_ct, text='Open', command=self.open_folder)
+        self.btn_open = ttk.Button(
+            self.info_ct, text='Open', command=self.open_folder)
         self.btn_open.grid(row=7, column=0, padx=5, pady=5,)
 
         # CREATE ATTRIBUTE CHOOSE CONTAINER
         self.attr_ct = tk.LabelFrame(self, text='Search By Attributes:')
-        self.attr_ct.grid(row=0, column=1, rowspan=2,
-                          padx=5, pady=5, sticky='nsew')
+        self.attr_ct.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
         self.attr_ct.columnconfigure(0, weight=40)
         self.attr_ct.columnconfigure(1, weight=40)
         self.attr_ct.columnconfigure(2, weight=20)
@@ -736,6 +723,33 @@ class SearchFrame(tk.Frame):
                                   command=self.add_attr)
         self.btn_add.grid(row=0, column=2, pady=5, sticky='ew')
 
+        # CREATE LIST OF SEARCH RESULTS
+        self.list_ct = tk.LabelFrame(self, text='Folders:')
+        self.list_ct.grid(row=1, column=0, columnspan=2,
+                          padx=5, pady=5, sticky='nsew')
+        self.list_ct.columnconfigure(0, weight=100)
+        self.list_ct.rowconfigure(0, weight=100)
+        self.columns = ('#1', '#2', '#3', '#4', '#5')
+        self.table = ttk.Treeview(self.list_ct, show='headings',
+                                  columns=self.columns, selectmode='browse')
+        self.table.column('#1', width=10)
+        self.table.column('#2', width=150)
+        self.table.column('#3', width=350)
+        self.table.column('#4', width=20)
+        self.table.column('#5', width=60)
+        self.table.heading('#1', text='ID')
+        self.table.heading('#2', text='Name')
+        self.table.heading('#3', text='Path')
+        self.table.heading('#4', text='Ver')
+        self.table.heading('#5', text='Date')
+        vsb3 = ttk.Scrollbar(self.list_ct, orient='vertical',
+                             command=self.table.yview)
+        self.table.configure(yscrollcommand=vsb3.set)
+        self.table.bind('<<TreeviewSelect>>', self.select_folder)
+        self.table.grid(row=0, column=0, sticky='nswe')
+        vsb3.grid(row=0, column=1, sticky='ns')
+        self.fill_table()
+
         # CREATE CONTROL BUTTONS CONTAINER
         self.buttons_ct = tk.Frame(self)
         self.buttons_ct.grid_configure(row=2, column=0, columnspan=2,
@@ -753,13 +767,40 @@ class SearchFrame(tk.Frame):
     def on_frame_configure2(self, e):
         self.canvas2.configure(scrollregion=self.canvas2.bbox('all'))
 
+    def select_folder(self, event):
+        ri = self.table.selection()[0]
+        item = self.table.item(ri)
+        path = item['values'][2]
+        print(path)
+        self.load_folder_info(path)
+
+    def load_folder_info(self, rel_path):
+        self.config = parse_config(rel_path)
+        self.lbl_path.configure(text=shorten_path(self.config.path))
+        self.lbl_name.configure(text=self.config.name)
+        self.lbl_ver.configure(text=self.config.ver)
+        self.lbl_date.configure(text=self.config.date)
+        self.comment_text.configure(state='normal')
+        self.comment_text.delete('1.0', 'end')
+        comment = self.config.special.get('comment', '')
+        if comment:
+            self.comment_text.insert('end', comment)
+        self.comment_text.configure(state='disabled')
+        print(self.config)
+        self.folder_attrs = self.config.attributes
+        self.draw_folder_attrs()
+
     def clear_value(self, event):
         self.choose_value.set('')
-    
 
     def change_values_list(self):
         values = list(sorted(self.attr_vals.get(self.choose_cat.get())))
         self.choose_value.configure(values=values)
+
+    def fill_table(self):
+        for f in self.searched_folders:
+            row = (f.id, f.name, f.path, f.ver, f.date)
+            self.table.insert("", 'end', values=row)
 
     def draw_search_attrs(self):
         for child in self.scrollable_frame2.winfo_children():
@@ -811,7 +852,9 @@ class SearchFrame(tk.Frame):
         self.draw_search_attrs()
 
     def open_folder(self):
-        pass
+        if self.config:
+            path = os.path.join(app_config.ROOT_PATH, self.config.path)
+            os.startfile(path)
 
     def search_folders(self):
         pass

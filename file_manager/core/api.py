@@ -1,20 +1,17 @@
 from . import app_config
-from .database import session, engine
-from .models import Folder, AttributeValue, Attribute, Base
+from .config_manager.models import Config
 from .config_manager.fs_operations import scan_fs
 from .config_manager.config_rw import parse_config, write_config_to_file
 from .db_operations import (clear_db_data, create_folder_from_cfg, create_all, drop_all, create_attribute,
-                            folder_exists, get_all_folder_ids, get_attribute_values, update_folder, get_attr_list)
+                            folder_exists, get_all_folder_ids, get_attribute_values, update_folder,
+                            get_attr_list, get_folders)
 from shutil import copytree
 
 
-def get_folders(filter_dict=None):
-    q = session.query(Folder)
-    if filter_dict:
-        for attr, value in filter_dict.items():
-            q = q.filter(getattr(Folder, attr) == value)
-    folders = q.all()
-    return folders
+def search_folders(filter_dict=None):
+    folders = get_folders()
+    cfgs = [Config(f.name, f.date, f.version, f.path, f.id) for f in folders]
+    return cfgs
 
 
 def make_db():
@@ -47,9 +44,11 @@ def make_db():
 def clear_db():
     drop_all()
 
+
 def write_attr():
     for attr in app_config.predefined_attrs:
         create_attribute(attr)
+
 
 def attribute_values_list():
     attr_vals = {}
@@ -58,6 +57,7 @@ def attribute_values_list():
         values = get_attribute_values(attr)
         attr_vals[attr] = values
     return attr_vals
+
 
 def write_new_config(cfg):
     cfg.id = create_folder_from_cfg(cfg)

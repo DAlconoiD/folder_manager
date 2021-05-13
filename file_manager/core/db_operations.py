@@ -23,6 +23,7 @@ def create_folder_from_cfg(cfg):
     session.commit()
     return folder.id
 
+
 def update_folder(cfg):
     folder = session.query(Folder).filter_by(id=cfg.id).first()
     folder.values = []
@@ -51,6 +52,7 @@ def create_attribute_value(attr_name, val):
         return attr_val
     return None
 
+
 def bind_values_to_folder(cfg, folder):
     if cfg.attributes != None:
         for name, values in cfg.attributes.items():
@@ -63,6 +65,7 @@ def bind_values_to_folder(cfg, folder):
                     val = create_attribute_value(name, v)
                 folder.values.append(val)
 
+
 def get_attribute(name):
     attr = session.query(Attribute).filter_by(name=name).first()
     return attr
@@ -73,15 +76,26 @@ def get_attribute_values(name):
     attr_values = set(a.value for a in attr.values)
     return attr_values
 
+
 def get_attr_list():
     attrs = session.query(Attribute.name).all()
     return set(a[0] for a in attrs)
+
 
 def get_attribute_value(name, value):
     val = session.query(AttributeValue).join(Attribute).\
         filter(Attribute.name == name).\
         filter(AttributeValue.value == value).first()
     return val
+
+
+def get_folders(filter_dict=None):
+    q = session.query(Folder)
+    if filter_dict:
+        for attr, value in filter_dict.items():
+            q = q.filter(getattr(Folder, attr) == value)
+    folders = q.all()
+    return folders
 
 
 def folder_exists(id):
@@ -93,6 +107,7 @@ def get_all_folder_ids():
     ids = session.query(Folder.id).all()
     id_list = list([id[0] for id in ids])
     return id_list
+
 
 def clear_db_data():
     meta = Base.metadata
