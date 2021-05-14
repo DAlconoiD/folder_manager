@@ -384,7 +384,7 @@ class CopyFrame(tk.Frame):
                 'ERROR', 'Please fill in all fields.')
             return
         try:
-            publish_folder(self.path_from, self.path_to, cfg)
+            publish_folder(self.path_from, self.path_to, cfg, 'testname123')
         except Exception as err:
             msgbox.showerror('ERROR', err)
             return

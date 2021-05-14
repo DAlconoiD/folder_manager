@@ -77,19 +77,22 @@ def update_config(cfg):
     write_config_to_file(cfg.path, cfg)
 
 
-def publish_folder(src, dest, cfg):
+def publish_folder(src, dest, cfg, name = None):
     try:
         copytree(src, dest)
     except Exception as err:
         raise err
     write_new_config(cfg)
+    try:
+        if name:
+            old_name = os.path.join(app_config.ROOT_PATH, cfg.path)
+            new_name = os.path.join(dest, name)
+            os.rename(old_name, new_name)
+    except Exception as err:
+        raise err
 
-def publish_and_remove(src, dest, cfg):
-    try:
-        copytree(src, dest)
-    except Exception as err:
-        raise err
-    write_new_config(cfg)
+def publish_and_remove(src, dest, cfg, name = None):
+    publish_folder(src, dest, cfg, name)
     remove_folder(src)
 
 def remove_folder(p):

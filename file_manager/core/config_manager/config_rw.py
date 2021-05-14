@@ -23,12 +23,12 @@ def parse_config(rel_path):
             values = set(v.strip() for v in description.get(key).split(','))
             attributes[key] = values
     cfg.attributes = attributes
+    special = {}
     if config.has_section('Special'):
         special_section = config['Special']
-        special = {}
         for key in special_section:
             special[key] = special_section.get(key)
-        cfg.special = special
+    cfg.special = special
     return cfg
     
 
