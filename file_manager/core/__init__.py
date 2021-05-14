@@ -12,10 +12,12 @@ class AppConfig():
         config.read(p, encoding='utf-8')
         #s = config.get('Settings', 'root')
         self.ROOT_PATH = config.get('Settings', 'root', fallback=os.getcwd())
+        self.COPY_PATH = config.get('Settings', 'copy_path', fallback=os.environ['HOMEPATH'])
         self.DATE_FORMAT = config.get('Settings', 'date_format', fallback='%Y-%m-%d') 
         self.CONFIG_NAME = config.get('Settings', 'date_format', fallback='!conf.ini')
         db_name = config.get('Settings', 'database', fallback='db.db')
-        self.DB_URI = 'sqlite:///' + os.path.join(self.APP_PATH, db_name)
+        self.DB_FP = os.path.join(self.APP_PATH, db_name)
+        self.DB_URI = 'sqlite:///' + self.DB_FP
 
         #get predefined tags
         self.predefined_attrs = set()
@@ -28,6 +30,6 @@ class AppConfig():
 
 
     def __repr__(self) -> str:
-        return f'{self.ROOT_PATH}\n{self.CONFIG_NAME}\n{self.DATE_FORMAT}\n{self.DB_URI}\n{self.predefined_attrs}'
+        return f'{self.ROOT_PATH}\n{self.CONFIG_NAME}\n{self.DATE_FORMAT}\n{self.DB_FP}\n{self.predefined_attrs}'
 
 app_config = AppConfig()

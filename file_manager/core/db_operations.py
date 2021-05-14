@@ -115,3 +115,4 @@ def clear_db_data():
         session.execute(table.delete())
         print(f'Clear table {table}')
     session.commit()
+

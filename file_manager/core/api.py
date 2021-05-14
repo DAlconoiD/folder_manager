@@ -1,3 +1,4 @@
+import os
 from . import app_config
 from .config_manager.models import Config
 from .config_manager.fs_operations import scan_fs
@@ -5,7 +6,7 @@ from .config_manager.config_rw import parse_config, write_config_to_file
 from .db_operations import (clear_db_data, create_folder_from_cfg, create_all, drop_all, create_attribute,
                             folder_exists, get_all_folder_ids, get_attribute_values, update_folder,
                             get_attr_list, get_folders)
-from shutil import copytree
+from shutil import copytree, rmtree
 
 
 def search_folders(filter_dict=None):
@@ -13,6 +14,11 @@ def search_folders(filter_dict=None):
     cfgs = [Config(f.name, f.date, f.version, f.path, f.id) for f in folders]
     return cfgs
 
+def make_if_not_exists():
+    """Makes DB if it is does not exist"""
+    if not os.path.exists(app_config.DB_FP):
+        print('MAKE DB')
+        make_db()
 
 def make_db():
     """Check all config files in root directory and make or update database out of this configs"""
@@ -77,3 +83,17 @@ def publish_folder(src, dest, cfg):
     except Exception as err:
         raise err
     write_new_config(cfg)
+
+def publish_and_remove(src, dest, cfg):
+    try:
+        copytree(src, dest)
+    except Exception as err:
+        raise err
+    write_new_config(cfg)
+    remove_folder(src)
+
+def remove_folder(p):
+    try:
+        rmtree(p, ignore_errors=True)
+    except Exception as err:
+        raise err
