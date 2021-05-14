@@ -12,7 +12,7 @@ from file_manager.core.api import (make_db, write_new_config, publish_folder,
 from file_manager.core.config_manager.fs_operations import has_config
 from file_manager.core.config_manager.models import Config
 from file_manager.core.config_manager.config_rw import parse_config, get_attributes_only
-from .helpers import path_is_parent, shorten_path
+from .helpers import path_is_parent, shorten_path, rewrite_tf
 
 
 class GUIApp(tk.Tk):
@@ -713,7 +713,8 @@ class SearchFrame(tk.Frame):
         self.scrollable_frame2.bind('<Configure>', self.on_frame_configure2)
         self.choose_cat = ttk.Combobox(
             self.attr_ct, values=self.attr_names, state='readonly')
-        self.choose_cat.current(0)
+        if len(self.attr_names) > 0:
+            self.choose_cat.current(0)
         self.choose_cat.grid(row=0, column=0, pady=5, sticky='ew')
         self.choose_cat.bind('<<ComboboxSelected>>', self.clear_value)
         self.choose_value = ttk.Combobox(self.attr_ct, postcommand=self.change_values_list,
@@ -780,12 +781,8 @@ class SearchFrame(tk.Frame):
         self.lbl_name.configure(text=self.config.name)
         self.lbl_ver.configure(text=self.config.ver)
         self.lbl_date.configure(text=self.config.date)
-        self.comment_text.configure(state='normal')
-        self.comment_text.delete('1.0', 'end')
         comment = self.config.special.get('comment', '')
-        if comment:
-            self.comment_text.insert('end', comment)
-        self.comment_text.configure(state='disabled')
+        rewrite_tf(self.comment_text, comment)
         print(self.config)
         self.folder_attrs = self.config.attributes
         self.draw_folder_attrs()

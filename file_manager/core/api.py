@@ -18,6 +18,7 @@ def make_db():
     """Check all config files in root directory and make or update database out of this configs"""
     clear_db()
     create_all()
+    write_attr()
     has_conf, _ = scan_fs(app_config.ROOT_PATH)
     new_configs = []
     existing_ids = get_all_folder_ids()
