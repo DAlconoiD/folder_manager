@@ -14,11 +14,13 @@ def search_folders(filter_dict=None):
     cfgs = [Config(f.name, f.date, f.version, f.path, f.id) for f in folders]
     return cfgs
 
+
 def make_if_not_exists():
     """Makes DB if it is does not exist"""
     if not os.path.exists(app_config.DB_FP):
         print('MAKE DB')
         make_db()
+
 
 def make_db():
     """Check all config files in root directory and make or update database out of this configs"""
@@ -78,19 +80,19 @@ def update_config(cfg):
 
 
 def publish_folder(src, dest, cfg):
+    print(f'SRC:\n{src}\nDEST:\n{dest}')
     try:
         copytree(src, dest)
     except Exception as err:
+        print('ERROR')
         raise err
     write_new_config(cfg)
 
+
 def publish_and_remove(src, dest, cfg):
-    try:
-        copytree(src, dest)
-    except Exception as err:
-        raise err
-    write_new_config(cfg)
+    publish_folder()
     remove_folder(src)
+
 
 def remove_folder(p):
     try:

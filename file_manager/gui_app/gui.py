@@ -1,7 +1,7 @@
 from file_manager.core.db_operations import get_attribute_values
 import os
 import sys
-import time  
+import time
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.tix as tix
@@ -58,7 +58,7 @@ class MainFrame(ttk.Frame):
         self.master.switch_frame(LoadingFrame)
         make_db()
         self.master.switch_frame(MainFrame)
-    
+
     def create_widgets(self):
         self.grid_rowconfigure(0, weight=20)
         self.grid_rowconfigure(1, weight=20)
@@ -206,7 +206,8 @@ class CopyFrame(tk.Frame):
             self.choose_cat.current(0)
         self.choose_cat.grid(row=0, column=0, pady=5, sticky='ew')
         self.choose_cat.bind('<<ComboboxSelected>>', self.clear_value)
-        self.choose_value = ttk.Combobox(self.attr_ct, postcommand=self.change_values_list)
+        self.choose_value = ttk.Combobox(
+            self.attr_ct, postcommand=self.change_values_list)
         self.choose_value.grid(row=0, column=1, pady=5, sticky='ew')
         self.btn_add = ttk.Button(self.attr_ct, text='Add',
                                   command=self.add_attr)
@@ -224,13 +225,13 @@ class CopyFrame(tk.Frame):
                                    command=self.copy_folder)
         self.btn_copy.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
         self.btn_copy_exit = ttk.Button(self.buttons_ct, text='Copy And Exit',
-                                   command=self.copy_and_exit)
+                                        command=self.copy_and_exit)
         self.btn_copy_exit.grid(row=0, column=2, padx=5, pady=5, sticky='ew')
         self.btn_move = ttk.Button(self.buttons_ct, text='Move',
                                    command=self.move_folder)
         self.btn_move.grid(row=0, column=3, padx=5, pady=5, sticky='ew')
         self.btn_move_exit = ttk.Button(self.buttons_ct, text='Move And Exit',
-                                   command=self.move_and_exit)
+                                        command=self.move_and_exit)
         self.btn_move_exit.grid(row=0, column=4, padx=5, pady=5, sticky='ew')
 
     def clear_value(self, event):
@@ -378,17 +379,21 @@ class CopyFrame(tk.Frame):
         write_new_config(cfg)
 
     def copy_folder(self):
+        if self.path_from == '' or self.path_to == '':
+            msgbox.showerror(
+                'ERROR', 'Please choose "From" and "To" directories.')
+            return
         cfg = self.create_config()
         if cfg == None:
             msgbox.showerror(
                 'ERROR', 'Please fill in all fields.')
             return
+        p = os.path.join(self.path_to, self.from_dirname)
         try:
-            publish_folder(self.path_from, self.path_to, cfg)
+            publish_folder(self.path_from, p, cfg)
         except Exception as err:
             msgbox.showerror('ERROR', err)
             return
-        
 
     def copy_and_exit(self):
         self.copy_folder()
@@ -407,11 +412,9 @@ class CopyFrame(tk.Frame):
         self.master.switch_frame(MainFrame)
 
     def create_config(self):
-        if self.from_dirname:
-            self.path_to = os.path.join(
-                self.path_to, self.from_dirname)
-            self.rel_path_to = os.path.relpath(
-                self.path_to, app_config.ROOT_PATH)
+        self.from_dirname = self.formate_dirname()
+        p = os.path.join(self.path_to, self.from_dirname)
+        self.rel_path_to = os.path.relpath(p, app_config.ROOT_PATH)
         name = self.entry_name.get().strip()
         date = self.entry_date.get_date()
         ver = self.entry_ver.get().strip()
@@ -421,7 +424,12 @@ class CopyFrame(tk.Frame):
         if name == '' or ver == '' or path == '':
             return None
         cfg = Config(name, date, ver, path, attributes=attrs, special=spec)
+        print(cfg)
         return cfg
+
+    def formate_dirname(self):
+        new_dirname = self.from_dirname
+        return new_dirname
 
 
 class EditFrame(tk.Frame):
@@ -535,7 +543,8 @@ class EditFrame(tk.Frame):
             self.choose_cat.current(0)
         self.choose_cat.grid(row=0, column=0, pady=5, sticky='ew')
         self.choose_cat.bind('<<ComboboxSelected>>', self.clear_value)
-        self.choose_value = ttk.Combobox(self.attr_ct, postcommand=self.change_values_list)
+        self.choose_value = ttk.Combobox(
+            self.attr_ct, postcommand=self.change_values_list)
         self.choose_value.grid(row=0, column=1, pady=5, sticky='ew')
         self.btn_add = ttk.Button(self.attr_ct, text='Add',
                                   command=self.add_attr)
@@ -551,7 +560,7 @@ class EditFrame(tk.Frame):
         self.btn_save = ttk.Button(self.buttons_ct, text='Save',
                                    command=self.save_config)
         self.btn_save.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
-    
+
     def clear_value(self, event):
         self.choose_value.set('')
 

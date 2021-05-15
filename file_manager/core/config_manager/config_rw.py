@@ -11,7 +11,8 @@ def parse_config(rel_path):
     config.read(p, encoding='utf-8')
     id = config.getint('General', 'id', fallback=None)
     name = config.get('General', 'name', fallback=None)
-    date_str = config.get('General', 'date', fallback=str(datetime.date.today()))
+    date_str = config.get(
+        'General', 'date', fallback=str(datetime.date.today()))
     date = datetime.datetime.strptime(date_str, app_config.DATE_FORMAT).date()
     ver = config.get('General', 'ver', fallback=None)
     path = config.get('General', 'path', fallback=rel_path)
@@ -23,14 +24,14 @@ def parse_config(rel_path):
             values = set(v.strip() for v in description.get(key).split(','))
             attributes[key] = values
     cfg.attributes = attributes
+    special = {}
     if config.has_section('Special'):
         special_section = config['Special']
-        special = {}
         for key in special_section:
             special[key] = special_section.get(key)
-        cfg.special = special
+    cfg.special = special
     return cfg
-    
+
 
 def write_config_to_file(rel_path, cfg):
     config = configparser.ConfigParser()
@@ -61,7 +62,8 @@ def write_config_to_file(rel_path, cfg):
 
 def get_attributes_only(rel_path, dct):
     if rel_path != '':
-        path = os.path.join(app_config.ROOT_PATH, rel_path, app_config.CONFIG_NAME)
+        path = os.path.join(app_config.ROOT_PATH, rel_path,
+                            app_config.CONFIG_NAME)
         if os.path.isfile(path):
             cfg = parse_config(rel_path)
             for name, values in cfg.attributes.items():
