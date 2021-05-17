@@ -3,15 +3,25 @@ from . import app_config
 from .config_manager.models import Config
 from .config_manager.fs_operations import scan_fs
 from .config_manager.config_rw import parse_config, write_config_to_file
-from .db_operations import (clear_db_data, create_folder_from_cfg, create_all, drop_all, create_attribute,
-                            folder_exists, get_all_folder_ids, get_attribute_values, update_folder,
-                            get_attr_list, get_folders)
+from .db_operations import (create_folder_from_cfg, create_all, drop_all, create_attribute,
+                            get_all_folder_ids, get_attribute_values, update_folder,
+                            get_attr_list, get_folders, search_by_attributes)
 from shutil import copytree, rmtree
 
 
-def search_folders(filter_dict=None):
-    folders = get_folders()
-    cfgs = [Config(f.name, f.date, f.version, f.path, f.id) for f in folders]
+def search_cfgs(filter_dict=None):
+    cfgs = None
+    if filter_dict is None or len(filter_dict) == 0:
+        folders = get_folders()
+        cfgs = [Config(f.name, f.date, f.version, f.path, f.id)
+                for f in folders]
+    else:
+        attrs = []
+        for attr, values in filter_dict.items():
+            for value in values:
+                attrs.append((attr, value))
+        rows = search_by_attributes(attrs)
+        cfgs = [Config(r[1], r[3], r[4], r[2], r[0]) for r in rows]
     return cfgs
 
 

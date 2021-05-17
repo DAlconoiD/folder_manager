@@ -1,3 +1,4 @@
 *.db
+*.sql
 venv/
 __pycache__/

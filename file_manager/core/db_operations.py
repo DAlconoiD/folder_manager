@@ -1,6 +1,3 @@
-import datetime
-from sqlalchemy import inspect
-from . import app_config
 from .database import session, engine
 from .models import Folder, AttributeValue, Attribute, Base
 
@@ -116,3 +113,27 @@ def clear_db_data():
         print(f'Clear table {table}')
     session.commit()
 
+
+def search_by_attributes(attr_list):
+    case_s = ''
+    for a in attr_list:
+        case_s += f"\t\t\t\tWHEN a.name = '{a[0]}' AND av.value = '{a[1]}' THEN 1\n"
+    stmt = 'SELECT * FROM folders\n'\
+        'WHERE id IN\n'\
+        '\t(SELECT f.id\n'\
+        '\tFROM folders f\n'\
+        '\t\tJOIN folder_value fv ON f.id = fv.folder_id\n'\
+        '\t\tJOIN attribute_values av ON fv.value_id = av.id\n'\
+        '\t\tJOIN attributes a ON av.attr_id = a.id\n'\
+        '\tGROUP BY f.id\n'\
+        '\tHAVING\n'\
+        '\t\tSUM(\n'\
+        '\t\t\tCASE\n'\
+        f'{case_s}'\
+        '\t\t\t\tELSE 0\n'\
+        '\t\t\tEND\n'\
+        f'\t\t) = {len(attr_list)});'
+    conn = engine.connect()
+    result = conn.execute(stmt)
+    rows = result.fetchall()
+    return rows

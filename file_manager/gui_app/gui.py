@@ -1,17 +1,13 @@
-from file_manager.core.db_operations import get_attribute_values
 import os
 import sys
-import time
 import tkinter as tk
 import tkinter.ttk as ttk
-import tkinter.tix as tix
 import tkinter.messagebox as msgbox
 import tkinter.filedialog as filedialog
-from sqlalchemy.sql.expression import false, true
 from tkcalendar import DateEntry
 from file_manager.core import app_config
 from file_manager.core.api import (make_db, write_new_config, publish_folder,
-                                   update_config, attribute_values_list, search_folders,
+                                   update_config, attribute_values_list, search_cfgs,
                                    make_if_not_exists, remove_folder)
 from file_manager.core.config_manager.fs_operations import has_config
 from file_manager.core.config_manager.models import Config
@@ -728,7 +724,7 @@ class SearchFrame(tk.Frame):
         self.folder_attrs = {}
         self.attr_vals = attribute_values_list()
         self.attr_names = sorted(self.attr_vals.keys())
-        self.searched_folders = search_folders()
+        self.searched_folders = search_cfgs()
 
     def create_widgets(self):
         # configure grid
@@ -884,6 +880,7 @@ class SearchFrame(tk.Frame):
         self.choose_value.configure(values=values)
 
     def fill_table(self):
+        self.table.delete(*self.table.get_children())
         for f in self.searched_folders:
             row = (f.id, f.name, f.path, f.ver, f.date)
             self.table.insert("", 'end', values=row)
@@ -943,7 +940,9 @@ class SearchFrame(tk.Frame):
             os.startfile(path)
 
     def search_folders(self):
-        pass
+        print(self.search_attrs)
+        self.searched_folders = search_cfgs(self.search_attrs)
+        self.fill_table()
 
 
 def run_app():
