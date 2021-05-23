@@ -302,8 +302,8 @@ class CopyFrame(tk.Frame):
             self.btn_from.configure(text=shorten_path(self.path_from))
             rewrite_tf(self.from_txt, self.path_from)
             if self.rel_path_to != '':
-                self.lbl_path.configure(text=shorten_path(os.path.join(
-                    self.rel_path_to, self.from_dirname), 55))
+                rewrite_tf(self.path_txt, os.path.join(
+                    self.rel_path_to, self.from_dirname))
 
     def ask_dir_to(self):
         if self.path_from == '':
@@ -390,14 +390,11 @@ class CopyFrame(tk.Frame):
         except Exception as err:
             msgbox.showerror('ERROR', err)
             return
+        msgbox.showinfo('SUCCESS', 'Operation successful!')
 
     def copy_and_exit(self):
         self.copy_folder()
-        try:
-            self.master.switch_frame(MainFrame)
-        except Exception as err:
-            msgbox.showerror('ERROR', err)
-            return
+        self.master.switch_frame(MainFrame)
 
     def move_folder(self):
         self.copy_folder()
@@ -857,7 +854,6 @@ class SearchFrame(tk.Frame):
         ri = self.table.selection()[0]
         item = self.table.item(ri)
         path = item['values'][2]
-        print(path)
         self.load_folder_info(path)
 
     def load_folder_info(self, rel_path):
@@ -937,7 +933,14 @@ class SearchFrame(tk.Frame):
     def open_folder(self):
         if self.config:
             path = os.path.join(app_config.ROOT_PATH, self.config.path)
-            os.startfile(path)
+            try:
+                os.startfile(path)
+            except FileNotFoundError:
+                msgbox.showerror(
+                    'ERROR', "Folder doesn't exist. Try remaking the database.")
+                return
+            except Exception as err:
+                msgbox.showerror('ERROR', err)
 
     def search_folders(self):
         print(self.search_attrs)

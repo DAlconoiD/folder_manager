@@ -79,6 +79,7 @@ def attribute_values_list():
 
 
 def write_new_config(cfg):
+    print(f'CFG PATH: {cfg.path}')
     cfg.id = create_folder_from_cfg(cfg)
     write_config_to_file(cfg.path, cfg)
     return cfg.id
